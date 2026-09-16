@@ -1,119 +1,171 @@
-﻿Breast Ultrasound Image Segmentation and Classification
-A Multi-Task U-Net Approach
-Overview
-This project implements a multi-task deep learning architecture for breast ultrasound analysis, combining lesion segmentation and image-level classification (normal, benign, malignant) into a single end-to-end model.
-The model is based on a shared U-Net encoder with two task-specific heads:
-* Segmentation decoder for pixel-wise lesion masks
+# Breast Ultrasound Image Segmentation & Classification
 
-* Classification branch using global pooling and dense layers
+![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-Deep%20Learning-orange?logo=tensorflow&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Task](https://img.shields.io/badge/Task-Segmentation%20%2B%20Classification-purple)
 
-This repository includes the full workflow: dataset review, preprocessing, model development, joint training, evaluation, and visualization.
-________________
+A multi-task deep learning system that simultaneously performs **tumour segmentation** and **malignancy classification** on breast ultrasound images using a shared U-Net encoder architecture.
 
+---
 
-Dataset
-We use the Breast Ultrasound Images Dataset, containing:
-   * Three classes: Normal, Benign, Malignant
+## 🔬 Overview
 
-   * Corresponding lesion masks for supervised segmentation
+Accurate breast cancer diagnosis requires two complementary steps: localising the tumour region (segmentation) and determining its nature — benign or malignant (classification). This project tackles both tasks in a single end-to-end model that shares a convolutional backbone between a pixel-wise segmentation decoder and an image-level classification head, improving efficiency and allowing the two tasks to reinforce each other during training.
 
-   * Grayscale ultrasound scans
+---
 
-Preprocessing Steps
-      * Loaded and validated all image–mask pairs
+## 📊 Dataset
 
-      * Resized images to a consistent resolution
+**[BUSI — Breast Ultrasound Images Dataset](https://scholar.cu.edu.eg/?q=afahmy/pages/dataset)**
 
-      * Normalized pixel intensities
+| Category | Description |
+|----------|-------------|
+| **Normal** | Healthy breast tissue (no tumour) |
+| **Benign** | Non-cancerous tumour |
+| **Malignant** | Cancerous tumour |
 
-      * Applied basic noise-reduction techniques
+Each sample includes:
+- A grayscale ultrasound image
+- A corresponding binary segmentation mask (tumour region)
 
-      * Encoded classification labels
+> **Citation:** Al-Dhabyani W, Gomaa M, Khaled H, Fahmy A. *Dataset of breast ultrasound images.* Data in Brief. 2020;28:104863. DOI: [10.1016/j.dib.2019.104863](https://doi.org/10.1016/j.dib.2019.104863)
 
-________________
+---
 
+## 🏗️ Model Architecture
 
-Model Architecture
-Multi-Task U-Net
-The architecture includes:
-         * Shared Encoder: Contracting path of U-Net
+The model uses a **U-Net backbone** whose encoder is shared between both task branches:
 
-         * Segmentation Decoder: Expanding path with skip connections
+```
+Input Ultrasound Image
+          │
+    ┌─────▼─────┐
+    │  Encoder  │   ← Shared convolutional feature extractor
+    │ (U-Net)   │     (Conv blocks + MaxPooling)
+    └─────┬─────┘
+          │
+    ┌─────┴──────────────────────┐
+    ▼                            ▼
+┌──────────────────┐    ┌──────────────────────┐
+│  Segmentation    │    │   Classification     │
+│    Decoder       │    │       Head           │
+│                  │    │                      │
+│  U-Net skip      │    │  GlobalAvgPool →     │
+│  connections +   │    │  Dense(256) →        │
+│  UpSampling →    │    │  Dropout →           │
+│  sigmoid output  │    │  Dense(3, softmax)   │
+│  (pixel mask)    │    │  (Normal/Benign/Mal) │
+└──────────────────┘    └──────────────────────┘
+```
 
-         * Classification Head:
+---
 
-            * Global Average Pooling at the bottleneck
+## 📉 Loss Functions
 
-            * Fully Connected layers
+| Task | Loss Function |
+|------|--------------|
+| Segmentation | Binary Cross-Entropy + Dice Loss |
+| Classification | Categorical Cross-Entropy |
+| **Combined** | Weighted sum of segmentation + classification loss |
 
-            * Softmax output for three classes
+---
 
-Loss Functions
-A weighted loss is used to jointly optimize both tasks:
-Total Loss = α * SegmentationLoss + β * ClassificationLoss
-Segmentation: Dice loss or BCE
-Classification: Categorical cross-entropy
-________________
+## 🏋️ Training Strategy
 
+- **Optimiser:** Adam
+- **Learning rate scheduling:** ReduceLROnPlateau — reduces LR when validation loss plateaus
+- **Early stopping:** Halts training when validation loss stops improving
+- **Data augmentation:**
+  - Horizontal and vertical flips
+  - Random rotation
+  - Brightness and contrast adjustments
 
-Training Strategy
-               * Joint training (shared encoder, two task heads)
+---
 
-               * Adam optimizer with LR scheduling
+## 📏 Evaluation Metrics
 
-               * Early stopping based on validation metrics
+**Segmentation (per image)**
 
-               * Batch-wise training with augmentation if required
+| Metric | Description |
+|--------|-------------|
+| Dice Coefficient | Overlap between predicted and ground-truth mask |
+| IoU | Intersection over Union |
+| Pixel Accuracy | % of pixels correctly classified |
 
-________________
+**Classification (per image)**
 
+| Metric | Description |
+|--------|-------------|
+| Accuracy | Overall correct class predictions |
+| Precision / Recall / F1 | Per-class breakdown |
+| Confusion Matrix | Full misclassification analysis |
 
-Evaluation Metrics
-Segmentation
-                  * Dice Coefficient
+---
 
-                  * Mean Intersection over Union (mIoU)
+## 📁 Project Structure
 
-                  * Pixel Accuracy
+```
+Breast-Ultrasound-Image-Segmentation-and-Classification/
+├── model/
+│   ├── unet_multitask.py       # Model architecture definition
+│   └── losses.py               # Custom loss functions (Dice + BCE)
+├── data/
+│   └── preprocessing.py        # Data loading, augmentation, mask processing
+├── train.py                    # Training entry point
+├── evaluate.py                 # Evaluation + metric reporting
+├── requirements.txt            # Python dependencies
+└── README.md
+```
 
-Classification
-                     * Accuracy
+---
 
-                     * Precision
+## 🚀 Getting Started
 
-                     * Recall
+### 1. Clone the repository
+```bash
+git clone https://github.com/Abtahi0712/Breast-Ultrasound-Image-Segmentation-Classification.git
+cd Breast-Ultrasound-Image-Segmentation-Classification
+```
 
-                     * F1-Score
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-Both sets of metrics are reported for training and validation splits.
-Running the Project
-Requirements
-Python 3.x  
-TensorFlow / Keras  
-NumPy  
-Matplotlib  
-scikit-learn  
-opencv-python  
+### 3. Download the dataset
+Download the BUSI dataset from the [official source](https://scholar.cu.edu.eg/?q=afahmy/pages/dataset) and place the images and masks in the `data/` directory, maintaining the folder structure:
+```
+data/
+├── normal/
+├── benign/
+└── malignant/
+```
 
+### 4. Train the model
+```bash
+python train.py
+```
 
-How to Run
-                        1. Open the notebook:
-Breast Ultrasound Image Segmentation & Classification.ipynb
+### 5. Evaluate
+```bash
+python evaluate.py
+```
 
-                        2. Execute cells sequentially: preprocessing → model definition → training → evaluation.
+---
 
-                        3. For testing on a new ultrasound image, preprocess it and call:
-model.predict(image)
- Then overlay the segmentation mask.
+## 🛠️ Tech Stack
 
-________________
+| Library | Purpose |
+|---------|---------|
+| `TensorFlow / Keras` | Model building and training |
+| `NumPy` | Array operations |
+| `OpenCV` | Image loading and preprocessing |
+| `Matplotlib / Seaborn` | Visualisation |
+| `scikit-learn` | Metrics (confusion matrix, classification report) |
 
+---
 
-Project Deliverables Included
-                           * Complete Jupyter Notebook
+## 📄 License
 
-                           * Model architecture diagram 
-
-                           * Segmentation visualizations
-
-                           * Trained model weights
+This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
