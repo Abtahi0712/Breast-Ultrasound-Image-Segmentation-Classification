@@ -134,7 +134,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. Download the dataset
-Download the BUSI dataset from the [official source](https://scholar.cu.edu.eg/?q=afahmy/pages/dataset) and place the images and masks in the `data/` directory, maintaining the folder structure:
+Download the BUSI dataset from the [official source](https://www.kaggle.com/datasets/aryashah2k/breast-ultrasound-images-dataset) and place the images and masks in the `data/` directory, maintaining the folder structure:
 ```
 data/
 ├── normal/
